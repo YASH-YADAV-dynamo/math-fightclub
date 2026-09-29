@@ -1,0 +1,41 @@
+import { mkdirSync } from "fs";
+// Forces meters full to exercise super, transform, unique, and a KO.
+import puppeteer from 'puppeteer-core';
+const out = process.env.OUT || 'screenshots';
+mkdirSync(out, { recursive: true });
+const browser = await puppeteer.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: 'new', args: ['--use-gl=angle', '--ignore-gpu-blocklist'], defaultViewport: { width: 1280, height: 720 } });
+const page = await browser.newPage();
+const errors = [];
+page.on('pageerror', (e) => errors.push('PAGEERROR: ' + e.message + '\n' + e.stack));
+page.on('console', (m) => { if (m.type() === 'error' && !m.text().includes('404')) errors.push(m.text()); });
+await page.goto('http://localhost:4173/', { waitUntil: 'networkidle2' });
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const press = async (k, ms = 60) => { await page.keyboard.down(k); await wait(ms); await page.keyboard.up(k); };
+const char = process.argv[2] || '0';
+await wait(3000);
+await press('KeyJ'); await wait(500);
+for (let i = 0; i < +char; i++) { await press('KeyD'); await wait(150); }
+await press('KeyJ'); await wait(6200);
+const fill = () => page.evaluate(() => { const f = window.__AXIOM.scene.getScene('Fight').world.fighters[0]; f.spec = 100; f.ki = 100; });
+await fill();
+await page.keyboard.down('KeyD'); await wait(400); await page.keyboard.up('KeyD');
+await press('KeyO'); await wait(1000);
+await page.screenshot({ path: `${out}/s_${char}_transform.png` });
+await fill();
+await press('KeyU'); await wait(250);
+await page.screenshot({ path: `${out}/s_${char}_cutin.png` });
+await wait(1500);
+await page.screenshot({ path: `${out}/s_${char}_super.png` });
+await wait(1200);
+await press('KeyI'); await wait(300);
+await page.screenshot({ path: `${out}/s_${char}_unique.png` });
+await wait(800);
+await page.evaluate(() => { const f = window.__AXIOM.scene.getScene('Fight').world.fighters[1]; f.hp = 30; });
+await page.keyboard.down('KeyD'); await wait(300); await page.keyboard.up('KeyD');
+for (let i = 0; i < 6; i++) { await press('KeyJ', 40); await wait(110); }
+await wait(500);
+await page.screenshot({ path: `${out}/s_${char}_ko.png` });
+await wait(2200);
+await page.screenshot({ path: `${out}/s_${char}_ragdoll.png` });
+console.log(errors.join('\n') || 'NO ERRORS');
+await browser.close();

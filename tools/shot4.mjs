@@ -1,0 +1,35 @@
+import { mkdirSync } from "fs";
+import puppeteer from 'puppeteer-core';
+const out = process.env.OUT || 'screenshots';
+mkdirSync(out, { recursive: true });
+const browser = await puppeteer.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: 'new', args: ['--use-gl=angle', '--ignore-gpu-blocklist'], defaultViewport: { width: 1280, height: 720 } });
+const page = await browser.newPage();
+const errors = [];
+page.on('pageerror', (e) => errors.push('PAGEERROR: ' + e.message + '\n' + e.stack));
+await page.goto('http://localhost:4173/', { waitUntil: 'networkidle2' });
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const press = async (k, ms = 60) => { await page.keyboard.down(k); await wait(ms); await page.keyboard.up(k); };
+const char = process.argv[2] || '0';
+// training mode so the dummy stands still
+await wait(3000); await press('KeyS'); await press('KeyJ'); await wait(500);
+for (let i = 0; i < +char; i++) { await press('KeyD'); await wait(120); }
+await press('KeyJ'); await wait(1800);
+await page.evaluate(() => { const f = window.__AXIOM.scene.getScene('Fight').world.fighters[0]; f.ki = 0; });
+await page.keyboard.down('KeyO'); await wait(1500);
+await page.screenshot({ path: `${out}/p_${char}_charge.png` });
+await wait(1800); await page.keyboard.up('KeyO'); await wait(200);
+await press('KeyO'); await wait(750);
+await page.screenshot({ path: `${out}/p_${char}_transform.png` });
+await wait(800);
+await page.keyboard.down('KeyD'); await page.keyboard.down('KeyW'); await press('KeyJ'); await page.keyboard.up('KeyW'); await page.keyboard.up('KeyD');
+await wait(280);
+await page.screenshot({ path: `${out}/p_${char}_orb.png` });
+await wait(350);
+await page.screenshot({ path: `${out}/p_${char}_beam.png` });
+await wait(1200);
+await page.evaluate(() => { const f = window.__AXIOM.scene.getScene('Fight').world.fighters[0]; f.ki = 100; });
+await page.keyboard.down('KeyS'); await page.keyboard.down('KeyD'); await press('KeyJ'); await page.keyboard.up('KeyS'); await page.keyboard.up('KeyD');
+await wait(420);
+await page.screenshot({ path: `${out}/p_${char}_wave.png` });
+console.log(errors.join('\n') || 'NO ERRORS');
+await browser.close();
